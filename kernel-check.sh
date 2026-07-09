@@ -50,6 +50,7 @@ Options:
   --network          Network interfaces
   --pcie             PCIe topology and errors
   --gpu              DRM / GPU (profile-aware)
+  --audio            ALSA cards, snd modules, audio dmesg
   --thermal          Temperature sensors
   --security         LSM and lockdown
   --scheduler        Scheduler and CPU topology
@@ -150,7 +151,7 @@ _handle_history_diff() {
 _run_all() {
   RUN[kernel]=1 RUN[boot]=1 RUN[modules]=1 RUN[dmesg]=1
   RUN[cpu]=1 RUN[memory]=1 RUN[storage]=1 RUN[network]=1
-  RUN[pcie]=1 RUN[gpu]=1 RUN[thermal]=1 RUN[security]=1
+  RUN[pcie]=1 RUN[gpu]=1 RUN[audio]=1 RUN[thermal]=1 RUN[security]=1
   RUN[scheduler]=1 RUN[power]=1 RUN[filesystem]=1 RUN[cgroups]=1
   RUN[tracing]=1 RUN[virt]=1
 }
@@ -165,7 +166,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --all) _run_all; shift ;;
     --quick) RUN=(); _run_quick; shift ;;
-    --kernel|--boot|--modules|--dmesg|--cpu|--memory|--storage|--network|--pcie|--gpu|--thermal|--security|--scheduler|--power|--filesystem|--cgroups|--tracing|--virt)
+    --kernel|--boot|--modules|--dmesg|--cpu|--memory|--storage|--network|--pcie|--gpu|--audio|--thermal|--security|--scheduler|--power|--filesystem|--cgroups|--tracing|--virt)
       RUN=()
       RUN["${1#--}"]=1
       shift
@@ -218,7 +219,7 @@ if ! dmesg &>/dev/null; then
   warn "Limited access: dmesg requires root or group membership"
 fi
 
-for name in kernel boot modules dmesg cpu memory storage network pcie gpu thermal security scheduler power filesystem cgroups tracing virt; do
+for name in kernel boot modules dmesg cpu memory storage network pcie gpu audio thermal security scheduler power filesystem cgroups tracing virt; do
   [[ -n "${RUN[$name]:-}" ]] && run_check "$name"
   echo ""
 done

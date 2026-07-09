@@ -29,7 +29,7 @@ After reboot:
 
 | Option | Description |
 |--------|-------------|
-| `--all` | Run all 18 checks (default) |
+| `--all` | Run all 19 checks (default) |
 | `--quick` | Kernel, boot, modules, dmesg only (CI smoke test) |
 | `--kernel` … `--virt` | Run a single check section (see table below) |
 | `--profile auto\|generic\|sky1` | Platform profile (default: `auto`) |
@@ -124,6 +124,7 @@ Profile files live in `profiles/`. Override thresholds, GPU patterns, and module
 | `network` | `--network` | Interfaces, drivers, loopback |
 | `pcie` | `--pcie` | lspci topology, AER, IOMMU |
 | `gpu` | `--gpu` | DRM nodes, profile GPU patterns (Panthor on Sky1) |
+| `audio` | `--audio` | ALSA cards, snd modules, profile audio expectations |
 | `thermal` | `--thermal` | thermal_zone + SCMI hwmon |
 | `security` | `--security` | LSM stack, lockdown, AppArmor |
 | `scheduler` | `--scheduler` | CPU count vs profile, sched sysfs, context switches |
@@ -151,6 +152,7 @@ test-suite/
 - `lspci` — PCIe checks (`pciutils`)
 - `jq` — richer snapshot diffs and template rendering (fallbacks exist)
 - `vulkaninfo` — optional GPU Vulkan info (`vulkan-tools`)
+- `alsa-utils` — optional ALSA card listing (`aplay -l`)
 - `bats` — unit tests
 - `shellcheck` — static analysis
 
