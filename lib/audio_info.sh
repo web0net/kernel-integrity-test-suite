@@ -27,5 +27,5 @@ snd_module_grep() {
 }
 
 count_snd_devices() {
-  ls /dev/snd/controlC* 2>/dev/null | wc -l | tr -d ' '
+  find /dev/snd -maxdepth 1 -name 'controlC*' 2>/dev/null | wc -l | tr -d ' '
 }
