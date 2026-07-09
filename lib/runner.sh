@@ -32,9 +32,11 @@ run_check() {
   local check="$1"
   local file="${SCRIPT_DIR}/checks/${check}.sh"
   [[ -f "$file" ]] || { fail "Missing check module: $check"; return; }
+  CHECK_CATEGORY="$check"
   # shellcheck source=/dev/null
   source "$file"
   "check_${check}"
+  CHECK_CATEGORY=""
 }
 
 print_summary() {

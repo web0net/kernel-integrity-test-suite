@@ -14,9 +14,21 @@ fi
 
 reset_counters() { PASS_COUNT=0; WARN_COUNT=0; FAIL_COUNT=0; }
 
-ok()   { echo -e "  ${GREEN}✓${NC}  $1"; PASS_COUNT=$((PASS_COUNT + 1)); }
-warn() { echo -e "  ${YELLOW}⚠${NC}  $1"; WARN_COUNT=$((WARN_COUNT + 1)); }
-fail() { echo -e "  ${RED}✗${NC}  $1"; FAIL_COUNT=$((FAIL_COUNT + 1)); }
+ok() {
+  echo -e "  ${GREEN}✓${NC}  $1"
+  PASS_COUNT=$((PASS_COUNT + 1))
+  [[ -n "${CHECK_CATEGORY:-}" ]] && record_check "$CHECK_CATEGORY" "pass" "$1"
+}
+warn() {
+  echo -e "  ${YELLOW}⚠${NC}  $1"
+  WARN_COUNT=$((WARN_COUNT + 1))
+  [[ -n "${CHECK_CATEGORY:-}" ]] && record_check "$CHECK_CATEGORY" "warn" "$1"
+}
+fail() {
+  echo -e "  ${RED}✗${NC}  $1"
+  FAIL_COUNT=$((FAIL_COUNT + 1))
+  [[ -n "${CHECK_CATEGORY:-}" ]] && record_check "$CHECK_CATEGORY" "fail" "$1"
+}
 info() { echo -e "  ${CYAN}→${NC}  $1"; }
 
 section() { echo -e "${YELLOW}--- $1 ---${NC}"; }
