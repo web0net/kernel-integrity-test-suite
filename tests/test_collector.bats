@@ -10,6 +10,32 @@ setup() {
   [[ "$result" == 'say \"hello\" \\ path' ]]
 }
 
+@test "json_escape handles tab and newlines" {
+  result="$(json_escape $'line1\nline2\twith tab')"
+  [[ "$result" == 'line1\nline2\twith tab' ]]
+}
+
+@test "flush_snapshot produces jq-valid JSON with multiline artifacts" {
+  # shellcheck disable=SC1091
+  source "$(dirname "$BATS_TEST_FILENAME")/../lib/common.sh"
+  init_collector
+  set_artifact "dmesg_errors" $'[    1.234] driver: probe failed\tcode=-19\n[    2.345] second line'
+  export REPORT_FORMAT="json"
+  export REPORT_TEMPLATE="community"
+  export PROFILE_NAME="generic"
+  PASS_COUNT=1; WARN_COUNT=0; FAIL_COUNT=0
+  local outfile
+  outfile="$(mktemp)"
+  flush_snapshot "$outfile"
+  if command -v jq &>/dev/null; then
+    jq empty "$outfile"
+  else
+    grep -q '\\t' "$outfile"
+    grep -q '\\n' "$outfile"
+  fi
+  rm -f "$outfile"
+}
+
 @test "init_collector resets state" {
   init_collector
   record_check "kernel" "pass" "test message"

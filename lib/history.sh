@@ -55,6 +55,10 @@ compute_diff() {
 
 _compute_diff_jq() {
   local prev="$1" cur="$2"
+  if ! jq empty "$prev" 2>/dev/null || ! jq empty "$cur" 2>/dev/null; then
+    _compute_diff_bash "$prev" "$cur"
+    return
+  fi
   jq -n \
     --slurpfile p "$prev" --slurpfile c "$cur" \
     'def artifact_lines:
