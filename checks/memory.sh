@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # checks/memory.sh
 check_memory() {
   section "Memory"

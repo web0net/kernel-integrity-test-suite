@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2012
 # checks/storage.sh
 check_storage() {
   section "Storage"

@@ -5,6 +5,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=lib/common.sh
 source "${SCRIPT_DIR}/lib/common.sh"
 
+# shellcheck source=lib/collector.sh
+source "${SCRIPT_DIR}/lib/collector.sh"
+
+# shellcheck source=lib/history.sh
+source "${SCRIPT_DIR}/lib/history.sh"
+
 load_profile() {
   local name="${1:-auto}"
   local model
@@ -29,9 +35,13 @@ run_check() {
   local check="$1"
   local file="${SCRIPT_DIR}/checks/${check}.sh"
   [[ -f "$file" ]] || { fail "Missing check module: $check"; return; }
+  CHECK_CATEGORY="$check"
   # shellcheck source=/dev/null
   source "$file"
+  set +e
   "check_${check}"
+  set -e
+  CHECK_CATEGORY=""
 }
 
 print_summary() {

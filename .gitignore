@@ -22,3 +22,9 @@ profiles/local.conf
 
 # Internal notes / plans
 mind/
+
+# Generated reports
+reports/
+
+# Git worktrees (local)
+.worktrees/

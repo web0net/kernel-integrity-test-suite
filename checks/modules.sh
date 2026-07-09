@@ -1,7 +1,8 @@
+#!/usr/bin/env bash
 check_modules() {
   section "Kernel Modules"
 
-  local running vermagic_proc vermagic_mod
+  local running vermagic_proc
   running="$(uname -r)"
 
   if [[ -f "/lib/modules/${running}/modules.builtin" ]]; then
@@ -38,4 +39,8 @@ check_modules() {
   else
     info "No MODULE_SMOKE_TEST configured for profile"
   fi
+
+  local mods
+  mods="$(lsmod 2>/dev/null | awk 'NR>1 {print $1}' | tr '\n' ',' | sed 's/,$//')"
+  set_artifact "loaded_modules" "$mods"
 }

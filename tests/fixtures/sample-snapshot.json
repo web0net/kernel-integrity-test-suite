@@ -1,0 +1,25 @@
+{
+  "meta": {"version":"2.0","timestamp":"2026-07-09T12:00:00+02:00","hostname":"test","profile":"generic","board":"test board","kernel":"6.12.5","template":"community","format":"md","limited_access":false},
+  "summary": {"pass":2,"warn":1,"fail":0,"status":"warn"},
+  "checks": {
+    "kernel": {
+      "status": "pass",
+      "items": [
+        {"level":"pass","message":"Running kernel: 6.12.5"},
+        {"level":"warn","message":"Custom taint flags set"}
+      ]
+    }
+  },
+  "artifacts": {
+    "cmdline": "console=ttyS0",
+    "dmesg_errors": ["[    3.456] sample: probe deferred"]
+  },
+  "diff": {
+    "note": "No previous snapshot available",
+    "previous_timestamp": null,
+    "kernel_changed": false,
+    "new_failures": [],
+    "new_dmesg_errors": [],
+    "resolved_failures": []
+  }
+}
