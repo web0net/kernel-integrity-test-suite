@@ -19,6 +19,14 @@ source "${SCRIPT_DIR}/lib/runner.sh"
 
 PROFILE="auto"
 JSON_OUTPUT=0
+REPORT_FORMAT=""
+REPORT_TEMPLATE=""
+NO_PROMPT=0
+OUTPUT_DIR="${SCRIPT_DIR}/reports"
+HISTORY_ONLY=0
+HISTORY_LIST=0
+HISTORY_DIFF_N=0
+LIMITED_ACCESS=false
 declare -A RUN=()
 
 usage() {
@@ -44,12 +52,62 @@ Options:
   --security         LSM and lockdown
   --profile NAME     generic | sky1 | auto (default: auto)
   --json             Machine-readable summary on stdout (last line)
+  --report FORMAT    html | md | json
+  --template NAME    developer | community
+  --no-prompt        Skip interactive prompts (default: json + community)
+  --output-dir PATH  Report output directory
+  --history          Show diff vs last snapshot and exit
+  --history-list     List saved snapshots and exit
+  --history-diff N   Diff vs N-th snapshot (1=newest)
   --no-color         Disable ANSI colors
   -h, --help         Show help
 
 Exit codes: 0 = pass, 1 = failure(s), 2 = script error
 EOF
   exit 0
+}
+
+_prompt_report_format() {
+  echo "Select report format:" >&2
+  echo "  1) HTML       (browser-friendly)" >&2
+  echo "  2) Markdown   (GitHub, forums)" >&2
+  echo "  3) JSON       (machine-readable)" >&2
+  local choice
+  read -r -p "Choice [1-3]: " choice </dev/tty || choice="3"
+  case "$choice" in
+    1) REPORT_FORMAT="html" ;;
+    2) REPORT_FORMAT="md" ;;
+    3|"") REPORT_FORMAT="json" ;;
+    *) echo "Invalid choice" >&2; exit 2 ;;
+  esac
+}
+
+_prompt_template() {
+  echo "Select report template:" >&2
+  echo "  1) Developer  (full details for bug reports)" >&2
+  echo "  2) Community  (quick checklist)" >&2
+  local choice
+  read -r -p "Choice [1-2]: " choice </dev/tty || choice="2"
+  case "$choice" in
+    1) REPORT_TEMPLATE="developer" ;;
+    2|"") REPORT_TEMPLATE="community" ;;
+    *) echo "Invalid choice" >&2; exit 2 ;;
+  esac
+}
+
+_resolve_report_options() {
+  if [[ "$HISTORY_LIST" -eq 1 ]]; then
+    list_snapshots
+    exit 0
+  fi
+  if [[ "$NO_PROMPT" -eq 1 ]]; then
+    [[ -z "$REPORT_FORMAT" ]] && REPORT_FORMAT="json"
+    [[ -z "$REPORT_TEMPLATE" ]] && REPORT_TEMPLATE="community"
+  else
+    [[ -z "$REPORT_FORMAT" ]] && _prompt_report_format
+    [[ -z "$REPORT_TEMPLATE" ]] && _prompt_template
+  fi
+  export REPORT_FORMAT REPORT_TEMPLATE
 }
 
 _run_all() {
@@ -74,12 +132,23 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --profile) PROFILE="$2"; shift 2 ;;
-    --json) JSON_OUTPUT=1; shift ;;
+    --report) REPORT_FORMAT="$2"; shift 2 ;;
+    --template) REPORT_TEMPLATE="$2"; shift 2 ;;
+    --no-prompt) NO_PROMPT=1; shift ;;
+    --output-dir) OUTPUT_DIR="$2"; shift 2 ;;
+    --history) HISTORY_ONLY=1; shift ;;
+    --history-list) HISTORY_LIST=1; shift ;;
+    --history-diff) HISTORY_DIFF_N="$2"; shift 2 ;;
+    --json) JSON_OUTPUT=1; REPORT_FORMAT="json"; shift ;;
     --no-color) NO_COLOR=1; shift ;;
     -h|--help) usage ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
 done
+
+if [[ "$HISTORY_LIST" -eq 1 ]]; then
+  _resolve_report_options
+fi
 
 load_profile "$PROFILE"
 
