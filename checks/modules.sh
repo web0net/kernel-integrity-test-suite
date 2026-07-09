@@ -38,4 +38,8 @@ check_modules() {
   else
     info "No MODULE_SMOKE_TEST configured for profile"
   fi
+
+  local mods
+  mods="$(lsmod 2>/dev/null | awk 'NR>1 {print $1}' | tr '\n' ',' | sed 's/,$//')"
+  set_artifact "loaded_modules" "$mods"
 }

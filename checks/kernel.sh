@@ -40,6 +40,8 @@ check_kernel() {
   local cmdline
   cmdline="$(read_file /proc/cmdline)"
   [[ -n "$cmdline" ]] && ok "Cmdline: ${cmdline}" || warn "Empty /proc/cmdline"
+  set_artifact "cmdline" "$cmdline"
+  set_artifact "taint_raw" "$taint"
 
   local machine
   machine="$(read_file /sys/firmware/devicetree/base/model)"

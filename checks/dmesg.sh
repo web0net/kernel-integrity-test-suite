@@ -27,4 +27,8 @@ check_dmesg() {
   local err_count
   err_count="$(echo "$log" | grep -ciE '\berror\b|\bfail\b' || true)"
   info "dmesg lines matching error/fail (informational): ${err_count}"
+
+  local errors
+  errors="$(echo "$log" | grep -iE 'error|fail|oops|panic|warn' | tail -50 || true)"
+  set_artifact "dmesg_errors" "$errors"
 }
