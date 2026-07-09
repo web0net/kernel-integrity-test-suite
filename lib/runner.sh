@@ -38,7 +38,9 @@ run_check() {
   CHECK_CATEGORY="$check"
   # shellcheck source=/dev/null
   source "$file"
+  set +e
   "check_${check}"
+  set -e
   CHECK_CATEGORY=""
 }
 

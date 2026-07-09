@@ -110,6 +110,35 @@ _resolve_report_options() {
   export REPORT_FORMAT REPORT_TEMPLATE
 }
 
+_handle_history_only() {
+  local newest second
+  newest="$(list_snapshots | sed -n '1p')"
+  second="$(list_snapshots | sed -n '2p')"
+  if [[ -z "$newest" || -z "$second" ]]; then
+    echo "Need at least 2 snapshots for --history" >&2
+    exit 2
+  fi
+  compute_diff "$second" "$newest"
+  exit 0
+}
+
+_handle_history_diff() {
+  local n="$1"
+  local cur prev
+  cur="$(get_snapshot_by_index "$n")"
+  prev="$(get_snapshot_by_index $((n + 1)))"
+  if [[ -z "$cur" ]]; then
+    echo "No snapshot at index ${n}" >&2
+    exit 2
+  fi
+  if [[ -z "$prev" ]]; then
+    printf '%s\n' '{"note":"No previous snapshot available"}'
+    exit 0
+  fi
+  compute_diff "$prev" "$cur"
+  exit 0
+}
+
 _run_all() {
   RUN[kernel]=1 RUN[boot]=1 RUN[modules]=1 RUN[dmesg]=1
   RUN[cpu]=1 RUN[memory]=1 RUN[storage]=1 RUN[network]=1
@@ -152,6 +181,16 @@ fi
 
 load_profile "$PROFILE"
 
+if [[ "$HISTORY_ONLY" -eq 1 ]]; then
+  _handle_history_only
+fi
+
+if [[ "$HISTORY_DIFF_N" -gt 0 ]]; then
+  _handle_history_diff "$HISTORY_DIFF_N"
+fi
+
+_resolve_report_options
+
 echo -e "${BLUE}=================================================${NC}"
 echo -e "${BLUE}   Kernel Integrity Test Suite                  ${NC}"
 echo -e "${BLUE}=================================================${NC}"
@@ -161,9 +200,52 @@ echo -e "Profile : ${CYAN}${PROFILE_NAME}${NC}"
 echo -e "Board   : ${CYAN}$(read_file /sys/firmware/devicetree/base/model 2>/dev/null || echo unknown)${NC}"
 echo ""
 
+init_collector
+
+if ! dmesg &>/dev/null; then
+  LIMITED_ACCESS=true
+  export LIMITED_ACCESS
+  warn "Limited access: dmesg requires root or group membership"
+fi
+
 for name in kernel boot modules dmesg cpu memory storage network pcie gpu thermal security; do
   [[ -n "${RUN[$name]:-}" ]] && run_check "$name"
   echo ""
 done
+
+PREV_SNAPSHOT="$(list_snapshots | head -1 || true)"
+SNAPSHOT_TMP="$(mktemp)"
+DIFF_JSON='{}'
+export DIFF_JSON
+flush_snapshot "$SNAPSHOT_TMP"
+
+if [[ -n "$PREV_SNAPSHOT" && -f "$PREV_SNAPSHOT" ]]; then
+  DIFF_JSON="$(compute_diff "$PREV_SNAPSHOT" "$SNAPSHOT_TMP")"
+else
+  DIFF_JSON='{"note":"No previous snapshot available"}'
+fi
+export DIFF_JSON
+flush_snapshot "$SNAPSHOT_TMP"
+
+mkdir -p "$OUTPUT_DIR"
+REPORT_FILE="${OUTPUT_DIR}/kernel-check-$(date -Iseconds 2>/dev/null | tr ':' '-' || date '+%Y-%m-%dT%H-%M-%S').${REPORT_FORMAT}"
+
+if [[ "$REPORT_FORMAT" == "json" ]]; then
+  cp "$SNAPSHOT_TMP" "$REPORT_FILE"
+elif [[ "$REPORT_FORMAT" == "html" || "$REPORT_FORMAT" == "md" ]]; then
+  "${SCRIPT_DIR}/render/render.sh" --from "$SNAPSHOT_TMP" \
+    --report "$REPORT_FORMAT" --template "$REPORT_TEMPLATE" \
+    --output "$REPORT_FILE" || exit 2
+else
+  echo "Unknown report format: ${REPORT_FORMAT}" >&2
+  exit 2
+fi
+
+HISTORY_PATH="$(save_snapshot "$SNAPSHOT_TMP")"
+
+echo ""
+info "Report saved: ${REPORT_FILE}"
+info "History snapshot: ${HISTORY_PATH}"
+rm -f "$SNAPSHOT_TMP"
 
 print_summary

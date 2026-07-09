@@ -29,10 +29,14 @@ record_check() {
   case "$level" in
     fail) CHECK_STATUS["$category"]="fail" ;;
     warn)
-      [[ "${CHECK_STATUS[$category]:-}" != "fail" ]] && CHECK_STATUS["$category"]="warn"
+      if [[ "${CHECK_STATUS[$category]:-}" != "fail" ]]; then
+        CHECK_STATUS["$category"]="warn"
+      fi
       ;;
     pass)
-      [[ -z "${CHECK_STATUS[$category]:-}" ]] && CHECK_STATUS["$category"]="pass"
+      if [[ -z "${CHECK_STATUS[$category]:-}" ]]; then
+        CHECK_STATUS["$category"]="pass"
+      fi
       ;;
   esac
 }
@@ -85,7 +89,7 @@ flush_snapshot() {
   done
   artifacts_json+="}"
 
-  local diff_json="${DIFF_JSON:-{}}"
+  local diff_json="${DIFF_JSON:-"{}"}"
 
   cat >"$outfile" <<EOF
 {
