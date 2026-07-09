@@ -124,11 +124,23 @@ _fallback_diff_note() {
 
 _build_checks_block() {
   if _has_jq; then
+    if [[ "$REPORT" == "html" ]]; then
+      jq -r '
+        .checks
+        | to_entries[]
+        | "<h3>\(.key) (<span class=\"status-\(.value.status)\">\(.value.status)</span>)</h3>"
+          + "<ul>"
+          + ([.value.items[]? | "<li>[\(.level)] \(.message)</li>"] | join(""))
+          + "</ul>"
+      ' "$FROM" 2>/dev/null || echo ""
+      return
+    fi
     jq -r '
       .checks
       | to_entries[]
       | "### \(.key) (\(.value.status))\n"
-        + (.value.items[]? | "- [\(.level)] \(.message)\n")
+        + ([.value.items[]? | "- [\(.level)] \(.message)"] | join("\n"))
+        + "\n"
     ' "$FROM" 2>/dev/null || echo ""
     return
   fi
@@ -137,6 +149,15 @@ _build_checks_block() {
 
 _build_problems_block() {
   if _has_jq; then
+    if [[ "$REPORT" == "html" ]]; then
+      jq -r '
+        [.checks | to_entries[] | .value.items[]?
+          | select(.level == "warn" or .level == "fail")
+          | "<li>[\(.level)] \(.message)</li>"]
+        | if length > 0 then "<ul>" + join("") + "</ul>" else "<p>(none)</p>" end
+      ' "$FROM" 2>/dev/null || echo ""
+      return
+    fi
     jq -r '
       .checks
       | to_entries[]
@@ -149,6 +170,148 @@ _build_problems_block() {
   echo ""
 }
 
+_build_checks_detail_block() {
+  if _has_jq; then
+    if [[ "$REPORT" == "html" ]]; then
+      jq -r '
+        .checks
+        | to_entries[]
+        | "<article><h3>\(.key)</h3><p>Status: <strong>\(.value.status)</strong></p><ul>"
+          + ([.value.items[]? | "<li><code>\(.level)</code> \(.message)</li>"] | join(""))
+          + "</ul></article>"
+      ' "$FROM" 2>/dev/null || echo ""
+      return
+    fi
+    jq -r '
+      .checks
+      | to_entries[]
+      | "#### \(.key)\n"
+        + "Status: \(.value.status)\n\n"
+        + ([.value.items[]? | "- `\(.level)` \(.message)"] | join("\n"))
+        + "\n"
+    ' "$FROM" 2>/dev/null || echo ""
+    return
+  fi
+  echo ""
+}
+
+_build_dmesg_block() {
+  if _has_jq; then
+    jq -r '
+      if (.artifacts.dmesg_errors // [] | length) > 0 then
+        .artifacts.dmesg_errors[] | if type == "string" then . else tostring end
+      else
+        "(no dmesg errors captured)"
+      end
+    ' "$FROM" 2>/dev/null || echo ""
+    return
+  fi
+  echo ""
+}
+
+_build_diff_detail_block() {
+  if _has_jq; then
+    if [[ "$REPORT" == "html" ]]; then
+      jq -r '
+        [
+          (if .diff.previous_timestamp? then "<li>Previous run: \(.diff.previous_timestamp)</li>" else empty end),
+          (if .diff.kernel_changed == true then "<li>Kernel changed (was \(.diff.previous_kernel // "unknown"))</li>" else empty end),
+          (.diff.new_failures[]? | "<li>New failure [\(.check)]: \(.message)</li>"),
+          (.diff.new_dmesg_errors[]? | "<li>New dmesg: \(.)</li>"),
+          (.diff.resolved_failures[]? | "<li>Resolved: \(.)</li>"),
+          (if (.diff.note // "") != "" then "<li>\(.diff.note)</li>" else empty end)
+        ] as $lines
+        | if ($lines | length) > 0 then "<ul>\($lines | join(""))</ul>" else "<p>(no diff details)</p>" end
+      ' "$FROM" 2>/dev/null || echo ""
+      return
+    fi
+    jq -r '
+      [
+        (if .diff.previous_timestamp? then "Previous run: \(.diff.previous_timestamp)" else empty end),
+        (if .diff.kernel_changed == true then "Kernel changed (was \(.diff.previous_kernel // "unknown"))" else empty end),
+        (.diff.new_failures[]? | "New failure [\(.check)]: \(.message)"),
+        (.diff.new_dmesg_errors[]? | "New dmesg: \(.)"),
+        (.diff.resolved_failures[]? | "Resolved: \(.)"),
+        (.diff.note // empty)
+      ] | .[]?
+    ' "$FROM" 2>/dev/null || echo ""
+    return
+  fi
+  echo ""
+}
+
+_esc_sed() {
+  printf '%s' "$1" | sed -e 's/[&|\\]/\\&/g'
+}
+
+_apply_scalar_placeholders() {
+  local line="$1"
+  local k b h t p ss sp sw sf ds spath
+
+  k="$(_esc_sed "$KERNEL")"
+  b="$(_esc_sed "$BOARD")"
+  h="$(_esc_sed "$HOSTNAME")"
+  t="$(_esc_sed "$TIMESTAMP")"
+  p="$(_esc_sed "$PROFILE")"
+  ss="$(_esc_sed "$SUMMARY_STATUS")"
+  sp="$(_esc_sed "$SUMMARY_PASS")"
+  sw="$(_esc_sed "$SUMMARY_WARN")"
+  sf="$(_esc_sed "$SUMMARY_FAIL")"
+  ds="$(_esc_sed "$DIFF_SUMMARY")"
+  spath="$(_esc_sed "$SNAPSHOT_PATH")"
+
+  printf '%s' "$line" | sed \
+    -e "s|{{kernel}}|${k}|g" \
+    -e "s|{{board}}|${b}|g" \
+    -e "s|{{hostname}}|${h}|g" \
+    -e "s|{{timestamp}}|${t}|g" \
+    -e "s|{{profile}}|${p}|g" \
+    -e "s|{{summary_status}}|${ss}|g" \
+    -e "s|{{summary_pass}}|${sp}|g" \
+    -e "s|{{summary_warn}}|${sw}|g" \
+    -e "s|{{summary_fail}}|${sf}|g" \
+    -e "s|{{diff_summary}}|${ds}|g" \
+    -e "s|{{snapshot_path}}|${spath}|g"
+}
+
+_emit_block() {
+  local content="$1"
+  if [[ -n "$content" ]]; then
+    printf '%s' "$content"
+    if [[ "$content" != *$'\n' ]]; then
+      printf '\n'
+    fi
+  fi
+}
+
+_write_output() {
+  local line
+  : >"$OUTPUT"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    case "$line" in
+      '{{checks_block}}')
+        _emit_block "$CHECKS_BLOCK" >>"$OUTPUT"
+        ;;
+      '{{problems_block}}')
+        _emit_block "$PROBLEMS_BLOCK" >>"$OUTPUT"
+        ;;
+      '{{checks_detail_block}}')
+        _emit_block "$CHECKS_DETAIL_BLOCK" >>"$OUTPUT"
+        ;;
+      '{{dmesg_block}}')
+        _emit_block "$DMESG_BLOCK" >>"$OUTPUT"
+        ;;
+      '{{diff_detail_block}}')
+        _emit_block "$DIFF_DETAIL_BLOCK" >>"$OUTPUT"
+        ;;
+      *)
+        _apply_scalar_placeholders "$line" >>"$OUTPUT"
+        printf '\n' >>"$OUTPUT"
+        ;;
+    esac
+  done <"$TEMPLATE_FILE"
+}
+
 KERNEL="$(_json_get .meta.kernel)"
 BOARD="$(_json_get .meta.board)"
 HOSTNAME="$(_json_get .meta.hostname)"
@@ -159,34 +322,11 @@ SUMMARY_PASS="$(_json_get .summary.pass)"
 SUMMARY_WARN="$(_json_get .summary.warn)"
 SUMMARY_FAIL="$(_json_get .summary.fail)"
 DIFF_SUMMARY="$(_json_get .diff.note)"
+SNAPSHOT_PATH="$FROM"
 CHECKS_BLOCK="$(_build_checks_block)"
 PROBLEMS_BLOCK="$(_build_problems_block)"
+CHECKS_DETAIL_BLOCK="$(_build_checks_detail_block)"
+DMESG_BLOCK="$(_build_dmesg_block)"
+DIFF_DETAIL_BLOCK="$(_build_diff_detail_block)"
 
-export KERNEL BOARD HOSTNAME TIMESTAMP PROFILE
-export SUMMARY_STATUS SUMMARY_PASS SUMMARY_WARN SUMMARY_FAIL
-export CHECKS_BLOCK PROBLEMS_BLOCK DIFF_SUMMARY
-
-_sed_oneline() {
-  local v="$1"
-  v="${v//$'\n'/ }"
-  printf '%s' "$v" | sed -e 's/[&|\\]/\\&/g'
-}
-
-CHECKS_BLOCK="$(_sed_oneline "$CHECKS_BLOCK")"
-PROBLEMS_BLOCK="$(_sed_oneline "$PROBLEMS_BLOCK")"
-DIFF_SUMMARY="$(_sed_oneline "$DIFF_SUMMARY")"
-
-sed \
-  -e "s|{{kernel}}|${KERNEL}|g" \
-  -e "s|{{board}}|${BOARD}|g" \
-  -e "s|{{hostname}}|${HOSTNAME}|g" \
-  -e "s|{{timestamp}}|${TIMESTAMP}|g" \
-  -e "s|{{profile}}|${PROFILE}|g" \
-  -e "s|{{summary_status}}|${SUMMARY_STATUS}|g" \
-  -e "s|{{summary_pass}}|${SUMMARY_PASS}|g" \
-  -e "s|{{summary_warn}}|${SUMMARY_WARN}|g" \
-  -e "s|{{summary_fail}}|${SUMMARY_FAIL}|g" \
-  -e "s|{{checks_block}}|${CHECKS_BLOCK}|g" \
-  -e "s|{{problems_block}}|${PROBLEMS_BLOCK}|g" \
-  -e "s|{{diff_summary}}|${DIFF_SUMMARY}|g" \
-  "$TEMPLATE_FILE" >"$OUTPUT"
+_write_output

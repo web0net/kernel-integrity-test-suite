@@ -7,6 +7,7 @@
 | Kernel | {{kernel}} |
 | Board | {{board}} |
 | Profile | {{profile}} |
+| Hostname | {{hostname}} |
 | Time | {{timestamp}} |
 
 ## Checklist
@@ -20,3 +21,26 @@
 ## Changes
 
 {{diff_summary}}
+
+## Check Details
+
+{{checks_detail_block}}
+
+## dmesg
+
+<details>
+<summary>dmesg excerpts</summary>
+
+```
+{{dmesg_block}}
+```
+
+</details>
+
+## Diff
+
+{{diff_detail_block}}
+
+## Raw Data
+
+Snapshot: `{{snapshot_path}}`
