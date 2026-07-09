@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Copyright (C) 2026 webnetbt@gmail.com
+# SPDX-License-Identifier: GPL-2.0-or-later
 # =============================================================================
 # kernel-check.sh — Post-custom-kernel system integrity checker
 #

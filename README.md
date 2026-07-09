@@ -163,6 +163,12 @@ shellcheck kernel-check.sh lib/*.sh checks/*.sh render/render.sh
 
 Extension guide: [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## License
+
+Copyright (C) 2026 webnetbt@gmail.com
+
+Licensed under **GPL-2.0-or-later**. See [LICENSE](LICENSE).
+
 ## Useful commands after a failed run
 
 ```bash
