@@ -16,11 +16,10 @@ done
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/runner.sh
+# shellcheck source=lib/runner.sh disable=SC1091
 source "${SCRIPT_DIR}/lib/runner.sh"
 
 PROFILE="auto"
-JSON_OUTPUT=0
 REPORT_FORMAT=""
 REPORT_TEMPLATE=""
 NO_PROMPT=0
@@ -167,7 +166,10 @@ while [[ $# -gt 0 ]]; do
     --all) _run_all; shift ;;
     --quick) RUN=(); _run_quick; shift ;;
     --kernel|--boot|--modules|--dmesg|--cpu|--memory|--storage|--network|--pcie|--gpu|--audio|--thermal|--security|--scheduler|--power|--filesystem|--cgroups|--tracing|--virt)
-      RUN=()
+      if [[ -z "${RUN_SELECTIVE_STARTED:-}" ]]; then
+        RUN=()
+        RUN_SELECTIVE_STARTED=1
+      fi
       RUN["${1#--}"]=1
       shift
       ;;
@@ -179,7 +181,7 @@ while [[ $# -gt 0 ]]; do
     --history) HISTORY_ONLY=1; shift ;;
     --history-list) HISTORY_LIST=1; shift ;;
     --history-diff) HISTORY_DIFF_N="$2"; shift 2 ;;
-    --json) JSON_OUTPUT=1; REPORT_FORMAT="json"; shift ;;
+    --json) REPORT_FORMAT="json"; shift ;;
     --no-color) NO_COLOR=1; shift ;;
     -h|--help) usage ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
@@ -258,5 +260,7 @@ echo ""
 info "Report saved: ${REPORT_FILE}"
 info "History snapshot: ${HISTORY_PATH}"
 rm -f "$SNAPSHOT_TMP"
+
+[[ "$REPORT_FORMAT" == "json" ]] && export JSON_OUTPUT=1
 
 print_summary

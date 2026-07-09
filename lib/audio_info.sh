@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 SND_MODULE_PATTERN='^snd_'
 

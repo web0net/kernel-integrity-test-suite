@@ -5,6 +5,11 @@
 check_audio() {
   section "Audio / ALSA"
 
+  if [[ "$(uname -s)" != "Linux" ]]; then
+    info "Skipping ALSA checks (host is $(uname -s))"
+    return 0
+  fi
+
   local script_dir
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   # shellcheck source=lib/audio_info.sh

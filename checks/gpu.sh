@@ -11,17 +11,17 @@ check_gpu() {
   source "${SCRIPT_DIR_GPU}/lib/gpu_info.sh"
 
   local cards render_count drivers mods driver_summary
-  cards="$(ls /dev/dri/card* 2>/dev/null | wc -l | tr -d ' ')"
-  render_count="$(ls /dev/dri/renderD* 2>/dev/null | wc -l | tr -d ' ')"
+  cards="$(find /dev/dri -maxdepth 1 -name 'card*' 2>/dev/null | wc -l | tr -d ' ')"
+  render_count="$(find /dev/dri -maxdepth 1 -name 'renderD*' 2>/dev/null | wc -l | tr -d ' ')"
 
   if [[ "$cards" -gt 0 ]]; then
-    ok "DRM cards: ${cards} ($(ls /dev/dri/card* 2>/dev/null | tr '\n' ' '))"
+    ok "DRM cards: ${cards} ($(find /dev/dri -maxdepth 1 -name 'card*' 2>/dev/null | tr '\n' ' '))"
   else
     warn "No DRM card devices under /dev/dri/"
   fi
 
   if [[ "$render_count" -gt 0 ]]; then
-    ok "Render nodes: ${render_count} ($(ls /dev/dri/renderD* 2>/dev/null | tr '\n' ' '))"
+    ok "Render nodes: ${render_count} ($(find /dev/dri -maxdepth 1 -name 'renderD*' 2>/dev/null | tr '\n' ' '))"
   else
     warn "No DRM render nodes"
   fi

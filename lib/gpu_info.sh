@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 # GPU-related module name patterns (kernel DRM/GPU drivers)
 GPU_MODULE_PATTERN='^(panthor|mali|amdgpu|radeon|i915|i965|nouveau|virtio_gpu|vgem|drm)'
