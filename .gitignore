@@ -1,0 +1,24 @@
+# Editor / IDE
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup / temp
+*.bak
+*.tmp
+*.log
+
+# Local overrides (not committed)
+profiles/local.conf
+.env
+.env.*
+
+# Internal notes / plans
+mind/
