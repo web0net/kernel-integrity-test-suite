@@ -7,12 +7,29 @@ declare -gA CHECK_ITEMS=()
 declare -gA ARTIFACTS=()
 
 json_escape() {
-  local s="$1"
-  s="${s//\\/\\\\}"
-  s="${s//\"/\\\"}"
-  s="${s//$'\n'/\\n}"
-  s="${s//$'\r'/}"
-  printf '%s' "$s"
+  local s="$1" out="" i c ord hex
+  for ((i = 0; i < ${#s}; i++)); do
+    c="${s:i:1}"
+    case "$c" in
+      "\\") out+="\\" ;;
+      '"') out+='\"' ;;
+      $'\n') out+='\n' ;;
+      $'\r') out+='\r' ;;
+      $'\t') out+='\t' ;;
+      $'\b') out+='\b' ;;
+      $'\f') out+='\f' ;;
+      *)
+        ord=$(LC_ALL=C printf '%d' "'$c" 2>/dev/null || echo -1)
+        if [[ "$ord" -ge 0 && "$ord" -lt 32 ]]; then
+          hex=$(printf '%04x' "$ord")
+          out+="\\u${hex}"
+        else
+          out+="$c"
+        fi
+        ;;
+    esac
+  done
+  printf '%s' "$out"
 }
 
 init_collector() {
