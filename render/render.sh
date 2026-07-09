@@ -289,32 +289,88 @@ _emit_block() {
   fi
 }
 
+_line_is_only_placeholder() {
+  local line="$1" placeholder="$2"
+  local trimmed
+  trimmed="$(printf '%s' "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  [[ "$trimmed" == "{{${placeholder}}}" ]]
+}
+
+_embed_placeholder() {
+  local line="$1" placeholder="$2" content="$3"
+  local marker="{{${placeholder}}}"
+  if [[ "$line" != *"$marker"* ]]; then
+    printf '%s' "$line"
+    return
+  fi
+  local rest="$line" out=""
+  while [[ "$rest" == *"$marker"* ]]; do
+    out+="${rest%%"$marker"*}"
+    out+="$content"
+    rest="${rest#*"$marker"}"
+  done
+  out+="$rest"
+  printf '%s' "$out"
+}
+
+_apply_block_placeholders() {
+  local line="$1"
+  line="$(_embed_placeholder "$line" "checks_block" "$CHECKS_BLOCK")"
+  line="$(_embed_placeholder "$line" "problems_block" "$PROBLEMS_BLOCK")"
+  line="$(_embed_placeholder "$line" "checks_detail_block" "$CHECKS_DETAIL_BLOCK")"
+  line="$(_embed_placeholder "$line" "dmesg_block" "$DMESG_BLOCK")"
+  line="$(_embed_placeholder "$line" "diff_detail_block" "$DIFF_DETAIL_BLOCK")"
+  printf '%s' "$line"
+}
+
 _write_output() {
   local line
   : >"$OUTPUT"
   while IFS= read -r line || [[ -n "$line" ]]; do
-    case "$line" in
-      '{{checks_block}}')
-        _emit_block "$CHECKS_BLOCK" >>"$OUTPUT"
-        ;;
-      '{{problems_block}}')
-        _emit_block "$PROBLEMS_BLOCK" >>"$OUTPUT"
-        ;;
-      '{{checks_detail_block}}')
-        _emit_block "$CHECKS_DETAIL_BLOCK" >>"$OUTPUT"
-        ;;
-      '{{dmesg_block}}')
-        _emit_block "$DMESG_BLOCK" >>"$OUTPUT"
-        ;;
-      '{{diff_detail_block}}')
-        _emit_block "$DIFF_DETAIL_BLOCK" >>"$OUTPUT"
-        ;;
-      *)
-        _apply_scalar_placeholders "$line" >>"$OUTPUT"
-        printf '\n' >>"$OUTPUT"
-        ;;
-    esac
+    line="${line%$'\r'}"
+
+    if _line_is_only_placeholder "$line" "checks_block"; then
+      _emit_block "$CHECKS_BLOCK" >>"$OUTPUT"
+      continue
+    fi
+    if _line_is_only_placeholder "$line" "problems_block"; then
+      _emit_block "$PROBLEMS_BLOCK" >>"$OUTPUT"
+      continue
+    fi
+    if _line_is_only_placeholder "$line" "checks_detail_block"; then
+      _emit_block "$CHECKS_DETAIL_BLOCK" >>"$OUTPUT"
+      continue
+    fi
+    if _line_is_only_placeholder "$line" "dmesg_block"; then
+      _emit_block "$DMESG_BLOCK" >>"$OUTPUT"
+      continue
+    fi
+    if _line_is_only_placeholder "$line" "diff_detail_block"; then
+      _emit_block "$DIFF_DETAIL_BLOCK" >>"$OUTPUT"
+      continue
+    fi
+
+    line="$(_apply_scalar_placeholders "$line")"
+    line="$(_apply_block_placeholders "$line")"
+    printf '%s\n' "$line" >>"$OUTPUT"
   done <"$TEMPLATE_FILE"
+}
+
+_build_diff_summary() {
+  if _has_jq; then
+    jq -r '
+      if (.diff.note // "") != "" then .diff.note
+      else
+        ((.diff.new_failures // []) | length) as $nf |
+        ((.diff.new_dmesg_errors // []) | length) as $nd |
+        if $nf == 0 and $nd == 0 then "(no changes since last run)"
+        else "\($nf) new failure(s), \($nd) new dmesg error(s)"
+        end
+      end
+    ' "$FROM" 2>/dev/null || echo ""
+    return
+  fi
+  _json_get .diff.note
 }
 
 KERNEL="$(_json_get .meta.kernel)"
@@ -326,7 +382,7 @@ SUMMARY_STATUS="$(_json_get .summary.status)"
 SUMMARY_PASS="$(_json_get .summary.pass)"
 SUMMARY_WARN="$(_json_get .summary.warn)"
 SUMMARY_FAIL="$(_json_get .summary.fail)"
-DIFF_SUMMARY="$(_json_get .diff.note)"
+DIFF_SUMMARY="$(_build_diff_summary)"
 SNAPSHOT_PATH="$FROM"
 CHECKS_BLOCK="$(_build_checks_block)"
 PROBLEMS_BLOCK="$(_build_problems_block)"
