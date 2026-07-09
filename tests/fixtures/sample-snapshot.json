@@ -1,0 +1,7 @@
+{
+  "meta": {"version":"2.0","timestamp":"2026-07-09T12:00:00+02:00","hostname":"test","profile":"generic","board":"test board","kernel":"6.12.5","template":"community","format":"md","limited_access":false},
+  "summary": {"pass":2,"warn":1,"fail":0,"status":"warn"},
+  "checks": {"kernel":{"status":"pass","items":[{"level":"pass","message":"Running kernel: 6.12.5"}]}},
+  "artifacts": {"cmdline":"console=ttyS0"},
+  "diff": {"note":"No previous snapshot available"}
+}
