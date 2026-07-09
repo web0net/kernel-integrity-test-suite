@@ -39,3 +39,20 @@ teardown() {
   count="$(find "$KERNEL_CHECK_HOME/history" -name '*.json' | wc -l | tr -d ' ')"
   [[ "$count" -eq 20 ]]
 }
+
+@test "compute_diff detects new failures and kernel change" {
+  local prev cur
+  prev="$(mktemp)"
+  cur="$(mktemp)"
+  cat >"$prev" <<'INNER'
+{"meta":{"kernel":"6.12.4"},"checks":{"gpu":{"status":"pass","items":[]}},"artifacts":{"dmesg_errors":["old error"],"loaded_modules":["kvm"]}}
+INNER
+  cat >"$cur" <<'INNER'
+{"meta":{"kernel":"6.12.5"},"checks":{"gpu":{"status":"fail","items":[{"level":"fail","message":"DRM missing"}]}},"artifacts":{"dmesg_errors":["old error","new error"],"loaded_modules":["kvm","ext4"]}}
+INNER
+  result="$(compute_diff "$prev" "$cur")"
+  [[ "$result" == *"kernel_changed"*true* ]]
+  [[ "$result" == *"DRM missing"* ]]
+  [[ "$result" == *"new error"* ]]
+  rm -f "$prev" "$cur"
+}

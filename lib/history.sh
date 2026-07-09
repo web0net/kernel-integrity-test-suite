@@ -41,3 +41,55 @@ prune_history() {
     fi
   done < <(list_snapshots)
 }
+
+_has_jq() { command -v jq &>/dev/null; }
+
+compute_diff() {
+  local prev="$1" cur="$2"
+  if _has_jq; then
+    _compute_diff_jq "$prev" "$cur"
+  else
+    _compute_diff_bash "$prev" "$cur"
+  fi
+}
+
+_compute_diff_jq() {
+  local prev="$1" cur="$2"
+  jq -n \
+    --slurpfile p "$prev" --slurpfile c "$cur" \
+    '{
+      previous_timestamp: $p[0].meta.timestamp,
+      previous_kernel: $p[0].meta.kernel,
+      kernel_changed: ($p[0].meta.kernel != $c[0].meta.kernel),
+      new_failures: [
+        $c[0].checks | to_entries[] |
+        select(.value.status == "fail") |
+        select(($p[0].checks[.key].status // "pass") != "fail") |
+        {check: .key, message: (.value.items[] | select(.level=="fail") | .message)}
+      ],
+      resolved_failures: [
+        $p[0].checks | to_entries[] |
+        select(.value.status == "fail") |
+        select(($c[0].checks[.key].status // "pass") != "fail") |
+        {check: .key, message: (.value.items[] | select(.level=="fail") | .message)}
+      ],
+      new_dmesg_errors: (
+        ($c[0].artifacts.dmesg_errors // []) - ($p[0].artifacts.dmesg_errors // [])
+      ),
+      added_modules: (
+        ($c[0].artifacts.loaded_modules // []) - ($p[0].artifacts.loaded_modules // [])
+      ),
+      removed_modules: (
+        ($p[0].artifacts.loaded_modules // []) - ($c[0].artifacts.loaded_modules // [])
+      )
+    }'
+}
+
+_compute_diff_bash() {
+  local prev_k cur_k changed=false
+  prev_k="$(grep -o '"kernel"[[:space:]]*:[[:space:]]*"[^"]*"' "$1" | head -1)"
+  cur_k="$(grep -o '"kernel"[[:space:]]*:[[:space:]]*"[^"]*"' "$2" | head -1)"
+  [[ "$prev_k" != "$cur_k" ]] && changed=true
+  printf '{"kernel_changed":%s,"new_failures":[],"new_dmesg_errors":[],"resolved_failures":[]}' \
+    "$changed"
+}
