@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # checks/power.sh
 check_power() {
   section "Power"

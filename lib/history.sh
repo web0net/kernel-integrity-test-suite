@@ -57,7 +57,19 @@ _compute_diff_jq() {
   local prev="$1" cur="$2"
   jq -n \
     --slurpfile p "$prev" --slurpfile c "$cur" \
-    '{
+    'def artifact_lines:
+        if . == null then []
+        elif type == "array" then .
+        elif type == "string" then
+          if . == "" then [] else split("\n") | map(select(length > 0)) end
+        else [] end;
+      def artifact_csv:
+        if . == null then []
+        elif type == "array" then .
+        elif type == "string" then
+          if . == "" then [] else split(",") | map(select(length > 0)) end
+        else [] end;
+      {
       previous_timestamp: $p[0].meta.timestamp,
       previous_kernel: $p[0].meta.kernel,
       kernel_changed: ($p[0].meta.kernel != $c[0].meta.kernel),
@@ -74,13 +86,16 @@ _compute_diff_jq() {
         {check: .key, message: (.value.items[] | select(.level=="fail") | .message)}
       ],
       new_dmesg_errors: (
-        ($c[0].artifacts.dmesg_errors // []) - ($p[0].artifacts.dmesg_errors // [])
+        ($c[0].artifacts.dmesg_errors | artifact_lines)
+        - ($p[0].artifacts.dmesg_errors | artifact_lines)
       ),
       added_modules: (
-        ($c[0].artifacts.loaded_modules // []) - ($p[0].artifacts.loaded_modules // [])
+        ($c[0].artifacts.loaded_modules | artifact_csv)
+        - ($p[0].artifacts.loaded_modules | artifact_csv)
       ),
       removed_modules: (
-        ($p[0].artifacts.loaded_modules // []) - ($c[0].artifacts.loaded_modules // [])
+        ($p[0].artifacts.loaded_modules | artifact_csv)
+        - ($c[0].artifacts.loaded_modules | artifact_csv)
       )
     }'
 }

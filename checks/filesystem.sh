@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # checks/filesystem.sh
 check_filesystem() {
   section "Filesystem"

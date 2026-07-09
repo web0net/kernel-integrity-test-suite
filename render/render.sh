@@ -35,8 +35,13 @@ while [[ $# -gt 0 ]]; do
       usage
       ;;
     *)
-      echo "Unknown argument: $1" >&2
-      exit 1
+      if [[ "$1" == *.json && -f "$1" ]]; then
+        FROM="$1"
+        shift
+      else
+        echo "Unknown argument: $1" >&2
+        exit 1
+      fi
       ;;
   esac
 done

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # checks/virt.sh
 check_virt() {
   section "Virtualization"

@@ -31,7 +31,7 @@ fail() {
 }
 info() { echo -e "  ${CYAN}→${NC}  $1"; }
 
-section() { echo -e "${YELLOW}--- $1 ---${NC}"; }
+section() { echo -e "${YELLOW}---${NC} ${BLUE}$1${NC} ${YELLOW}---${NC}"; }
 
 read_file() {
   local path="$1"

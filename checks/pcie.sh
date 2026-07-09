@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # checks/pcie.sh
 check_pcie() {
   section "PCIe"

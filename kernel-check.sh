@@ -223,14 +223,14 @@ done
 
 PREV_SNAPSHOT="$(list_snapshots | head -1 || true)"
 SNAPSHOT_TMP="$(mktemp)"
-DIFF_JSON='{}'
+DIFF_JSON=$(printf '%s' '{}')
 export DIFF_JSON
 flush_snapshot "$SNAPSHOT_TMP"
 
 if [[ -n "$PREV_SNAPSHOT" && -f "$PREV_SNAPSHOT" ]]; then
   DIFF_JSON="$(compute_diff "$PREV_SNAPSHOT" "$SNAPSHOT_TMP")"
 else
-  DIFF_JSON='{"note":"No previous snapshot available"}'
+  DIFF_JSON=$(printf '%s' '{"note":"No previous snapshot available"}')
 fi
 export DIFF_JSON
 flush_snapshot "$SNAPSHOT_TMP"

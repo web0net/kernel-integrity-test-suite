@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2015,SC2012
 # checks/gpu.sh
 check_gpu() {
   section "GPU / DRM"

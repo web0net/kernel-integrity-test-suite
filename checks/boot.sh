@@ -1,13 +1,19 @@
+#!/usr/bin/env bash
 check_boot() {
   section "Boot"
 
   local running uptime_secs
   running="$(uname -r)"
-  uptime_secs="$(cut -d. -f1 /proc/uptime)"
-
-  if [[ "${uptime_secs:-0}" -lt 60 ]]; then
-    warn "System uptime ${uptime_secs}s — some drivers may still be probing"
+  if [[ -r /proc/uptime ]]; then
+    uptime_secs="$(cut -d. -f1 /proc/uptime)"
   else
+    uptime_secs=""
+    info "No /proc/uptime (host is $(uname -s))"
+  fi
+
+  if [[ -n "${uptime_secs}" && "${uptime_secs:-0}" -lt 60 ]]; then
+    warn "System uptime ${uptime_secs}s — some drivers may still be probing"
+  elif [[ -n "${uptime_secs}" ]]; then
     ok "Uptime: ${uptime_secs}s"
   fi
 

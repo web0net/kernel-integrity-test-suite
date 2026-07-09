@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # checks/cpu.sh
 check_cpu() {
   section "CPU"

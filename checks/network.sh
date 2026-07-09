@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # checks/network.sh
 check_network() {
   section "Network"

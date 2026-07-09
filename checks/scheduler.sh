@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # checks/scheduler.sh
 check_scheduler() {
   section "Scheduler"

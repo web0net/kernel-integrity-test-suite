@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2015
 # checks/thermal.sh
 check_thermal() {
   section "Temperature"

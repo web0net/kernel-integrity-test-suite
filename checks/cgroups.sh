@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # checks/cgroups.sh
 check_cgroups() {
   section "Cgroups"

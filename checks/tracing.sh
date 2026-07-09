@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # checks/tracing.sh
 check_tracing() {
   section "Tracing"

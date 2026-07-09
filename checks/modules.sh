@@ -1,7 +1,8 @@
+#!/usr/bin/env bash
 check_modules() {
   section "Kernel Modules"
 
-  local running vermagic_proc vermagic_mod
+  local running vermagic_proc
   running="$(uname -r)"
 
   if [[ -f "/lib/modules/${running}/modules.builtin" ]]; then
