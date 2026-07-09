@@ -8,6 +8,9 @@ source "${SCRIPT_DIR}/lib/common.sh"
 # shellcheck source=lib/collector.sh
 source "${SCRIPT_DIR}/lib/collector.sh"
 
+# shellcheck source=lib/history.sh
+source "${SCRIPT_DIR}/lib/history.sh"
+
 load_profile() {
   local name="${1:-auto}"
   local model
