@@ -1,0 +1,4 @@
+snd_soc_hdmi 12345 0
+snd_soc_core 67890 1 snd_soc_hdmi
+soundcore 111 2 snd_soc_core
+panthor 222 0
