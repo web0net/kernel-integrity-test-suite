@@ -55,3 +55,60 @@ build_checks_json() {
   result+="}"
   printf '%s' "$result"
 }
+
+
+_summary_status() {
+  [[ "${FAIL_COUNT:-0}" -gt 0 ]] && { echo "fail"; return; }
+  [[ "${WARN_COUNT:-0}" -gt 0 ]] && { echo "warn"; return; }
+  echo "pass"
+}
+
+_iso_timestamp() {
+  date -Iseconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S%z'
+}
+
+flush_snapshot() {
+  local outfile="$1"
+  local ts kernel hostname board
+  ts="$(_iso_timestamp)"
+  kernel="$(uname -r)"
+  hostname="$(hostname 2>/dev/null || echo unknown)"
+  board="$(read_file /sys/firmware/devicetree/base/model 2>/dev/null || echo "")"
+  [[ -z "$board" ]] && board="unknown"
+
+  local artifacts_json="{"
+  local af=1
+  for key in "${!ARTIFACTS[@]}"; do
+    [[ $af -eq 0 ]] && artifacts_json+=","
+    af=0
+    artifacts_json+="\"${key}\":\"$(json_escape "${ARTIFACTS[$key]}")\""
+  done
+  artifacts_json+="}"
+
+  local diff_json="${DIFF_JSON:-{}}"
+
+  cat >"$outfile" <<EOF
+{
+  "meta": {
+    "version": "${COLLECTOR_VERSION}",
+    "timestamp": "${ts}",
+    "hostname": "$(json_escape "$hostname")",
+    "profile": "${PROFILE_NAME:-unknown}",
+    "board": "$(json_escape "$board")",
+    "kernel": "$(json_escape "$kernel")",
+    "template": "${REPORT_TEMPLATE:-community}",
+    "format": "${REPORT_FORMAT:-json}",
+    "limited_access": ${LIMITED_ACCESS:-false}
+  },
+  "summary": {
+    "pass": ${PASS_COUNT:-0},
+    "warn": ${WARN_COUNT:-0},
+    "fail": ${FAIL_COUNT:-0},
+    "status": "$(_summary_status)"
+  },
+  "checks": $(build_checks_json),
+  "artifacts": ${artifacts_json},
+  "diff": ${diff_json}
+}
+EOF
+}
