@@ -20,11 +20,16 @@ profiles/local.conf
 .env
 .env.*
 
-# Internal notes / plans
+# Internal notes / plans / specs / OpenMemory guide (not committed)
 mind/
+openmemory.md
+docs/
+
+# Git worktrees (local)
+.worktrees/
 
 # Generated reports
 reports/
 
-# Git worktrees (local)
-.worktrees/
+# OpenMemory - IDE/Assistant specific rules
+.cursor/rules/openmemory.mdc
