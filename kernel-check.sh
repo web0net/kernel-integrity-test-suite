@@ -16,11 +16,10 @@ done
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/runner.sh
+# shellcheck source=lib/runner.sh disable=SC1091
 source "${SCRIPT_DIR}/lib/runner.sh"
 
 PROFILE="auto"
-JSON_OUTPUT=0
 REPORT_FORMAT=""
 REPORT_TEMPLATE=""
 NO_PROMPT=0
@@ -50,6 +49,7 @@ Options:
   --network          Network interfaces
   --pcie             PCIe topology and errors
   --gpu              DRM / GPU (profile-aware)
+  --audio            ALSA cards, snd modules, audio dmesg
   --thermal          Temperature sensors
   --security         LSM and lockdown
   --scheduler        Scheduler and CPU topology
@@ -150,7 +150,7 @@ _handle_history_diff() {
 _run_all() {
   RUN[kernel]=1 RUN[boot]=1 RUN[modules]=1 RUN[dmesg]=1
   RUN[cpu]=1 RUN[memory]=1 RUN[storage]=1 RUN[network]=1
-  RUN[pcie]=1 RUN[gpu]=1 RUN[thermal]=1 RUN[security]=1
+  RUN[pcie]=1 RUN[gpu]=1 RUN[audio]=1 RUN[thermal]=1 RUN[security]=1
   RUN[scheduler]=1 RUN[power]=1 RUN[filesystem]=1 RUN[cgroups]=1
   RUN[tracing]=1 RUN[virt]=1
 }
@@ -165,8 +165,11 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --all) _run_all; shift ;;
     --quick) RUN=(); _run_quick; shift ;;
-    --kernel|--boot|--modules|--dmesg|--cpu|--memory|--storage|--network|--pcie|--gpu|--thermal|--security|--scheduler|--power|--filesystem|--cgroups|--tracing|--virt)
-      RUN=()
+    --kernel|--boot|--modules|--dmesg|--cpu|--memory|--storage|--network|--pcie|--gpu|--audio|--thermal|--security|--scheduler|--power|--filesystem|--cgroups|--tracing|--virt)
+      if [[ -z "${RUN_SELECTIVE_STARTED:-}" ]]; then
+        RUN=()
+        RUN_SELECTIVE_STARTED=1
+      fi
       RUN["${1#--}"]=1
       shift
       ;;
@@ -178,7 +181,7 @@ while [[ $# -gt 0 ]]; do
     --history) HISTORY_ONLY=1; shift ;;
     --history-list) HISTORY_LIST=1; shift ;;
     --history-diff) HISTORY_DIFF_N="$2"; shift 2 ;;
-    --json) JSON_OUTPUT=1; REPORT_FORMAT="json"; shift ;;
+    --json) REPORT_FORMAT="json"; shift ;;
     --no-color) NO_COLOR=1; shift ;;
     -h|--help) usage ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
@@ -218,7 +221,7 @@ if ! dmesg &>/dev/null; then
   warn "Limited access: dmesg requires root or group membership"
 fi
 
-for name in kernel boot modules dmesg cpu memory storage network pcie gpu thermal security scheduler power filesystem cgroups tracing virt; do
+for name in kernel boot modules dmesg cpu memory storage network pcie gpu audio thermal security scheduler power filesystem cgroups tracing virt; do
   [[ -n "${RUN[$name]:-}" ]] && run_check "$name"
   echo ""
 done
@@ -257,5 +260,7 @@ echo ""
 info "Report saved: ${REPORT_FILE}"
 info "History snapshot: ${HISTORY_PATH}"
 rm -f "$SNAPSHOT_TMP"
+
+[[ "$REPORT_FORMAT" == "json" ]] && export JSON_OUTPUT=1
 
 print_summary

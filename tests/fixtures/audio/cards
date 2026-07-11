@@ -1,0 +1,4 @@
+ 0 [HDAudio   ]: HDA-Intel - HDA Intel
+                      HDA Intel at 0xfc800000 irq 25
+ 1 [HDMI       ]: HDMI - dw-hdmi-hdmi
+                      dw-hdmi-hdmi

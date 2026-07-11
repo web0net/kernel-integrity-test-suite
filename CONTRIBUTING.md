@@ -21,6 +21,19 @@ How to extend the Kernel Integrity Test Suite with new platform profiles, check 
 3. Wire the name into `load_profile()` in `lib/runner.sh` if you need non–devicetree auto-detection, or document that users pass `--profile <name>`.
 4. Add a row to the Profiles table in `README.md`.
 
+
+### GPU and audio profile keys
+
+Checks read these optional variables from `profiles/*.conf` (empty or `0` usually means skip strict matching):
+
+| Variable | Used by | Meaning |
+|----------|---------|---------|
+| `GPU_EXPECTED_DRIVER` | `gpu` | Expected DRM driver name (e.g. `panthor`); empty = report only |
+| `GPU_EXPECTED_MODULES` | `gpu` | Space-separated kernel modules that must pass `modprobe -n` |
+| `AUDIO_MIN_CARDS` | `audio` | Minimum ALSA cards in `/proc/asound/cards` (`0` = skip count) |
+| `AUDIO_EXPECTED_CARD` | `audio` | Substring expected in a card name (empty = skip) |
+| `AUDIO_DMESG_PATTERN` | `audio` | Regex/substring for successful codec init in dmesg (empty = skip) |
+
 Use `profiles/generic.conf` and `profiles/sky1.conf` as references. Checks read these variables after `load_profile` runs; unset variables should behave safely (most checks treat `0` or empty as “skip strict match”).
 
 ## Adding a check module

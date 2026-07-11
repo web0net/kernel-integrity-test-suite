@@ -1,0 +1,4 @@
+filename:       /lib/modules/6.6.89+/kernel/drivers/gpu/drm/panthor/panthor.ko
+version:        1.3.0
+description:    ARM Mali Panthor DRM driver
+vermagic:       6.6.89+ SMP mod_unload modversions aarch64
