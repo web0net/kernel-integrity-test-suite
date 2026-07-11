@@ -11,7 +11,7 @@ json_escape() {
   for ((i = 0; i < ${#s}; i++)); do
     c="${s:i:1}"
     case "$c" in
-      "\\") out+="\\" ;;
+      "\\") out+='\\' ;;
       '"') out+='\"' ;;
       $'\n') out+='\n' ;;
       $'\r') out+='\r' ;;
@@ -22,7 +22,7 @@ json_escape() {
         ord=$(LC_ALL=C printf '%d' "'$c" 2>/dev/null || echo -1)
         if [[ "$ord" -ge 0 && "$ord" -lt 32 ]]; then
           hex=$(printf '%04x' "$ord")
-          out+="\\u${hex}"
+          out+='\\u'"${hex}"
         else
           out+="$c"
         fi
