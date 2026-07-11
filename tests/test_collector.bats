@@ -36,6 +36,30 @@ setup() {
   rm -f "$outfile"
 }
 
+@test "json_escape handles invalid json escape sequences" {
+  result="$(json_escape $'\\u123\\invalid\\x41\\path\\')"
+  [[ "$result" == *'\\u123'* ]]
+  [[ "$result" == *'\\invalid'* ]]
+  [[ "$result" == *'\\x41'* ]]
+  [[ "$result" == *'\\path\\'* ]]
+}
+
+@test "flush_snapshot escapes backslashes in check messages for jq" {
+  # shellcheck disable=SC1091
+  source "$(dirname "$BATS_TEST_FILENAME")/../lib/common.sh"
+  init_collector
+  record_check "dmesg" "warn" $'firmware \\u123 load \\failed'
+  export REPORT_FORMAT="json"
+  export REPORT_TEMPLATE="community"
+  export PROFILE_NAME="generic"
+  PASS_COUNT=0; WARN_COUNT=1; FAIL_COUNT=0
+  local outfile
+  outfile="$(mktemp)"
+  flush_snapshot "$outfile"
+  command -v jq &>/dev/null && jq empty "$outfile"
+  rm -f "$outfile"
+}
+
 @test "init_collector resets state" {
   init_collector
   record_check "kernel" "pass" "test message"
